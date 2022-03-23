@@ -1,0 +1,779 @@
+import sys
+import os
+import numpy as np
+import pandas as pd 
+from math import pi
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QMainWindow, QSizePolicy, QDialog, QFileDialog, QSplashScreen
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtGui import QPixmap
+import time
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5 import NavigationToolbar2QT as NavigationToolbar
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+from scipy.signal import savgol_filter
+from sklearn.ensemble import IsolationForest
+import joblib
+from tensorflow.keras.models import load_model
+
+class Ui_MainWindow(object):
+    def setupUi(self, MainWindow):
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.resize(1138, 867)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("Logo.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        MainWindow.setWindowIcon(icon)
+        MainWindow.setStyleSheet("QPushButton { width:40px; height:20px;\n"
+"text-align: center; font-weight: bold;\n"
+"}\n"
+"QPushButton:hover {background-color: rgb(255, 212, 38) }\n"
+"\n"
+"QProgressBar { border: 1px solid grey;\n"
+"border-radius: 6px;\n"
+"text-align: center\n"
+"}\n"
+"QProgressBar:chunk { background-color: rgb(255, 212, 38) }")
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget.setObjectName("centralwidget")
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.centralwidget)
+        self.horizontalLayout_4.setSpacing(7)
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_3.setSpacing(20)
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.graph_title = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(True)
+        font.setWeight(75)
+        self.graph_title.setFont(font)
+        self.graph_title.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignHCenter)
+        self.graph_title.setObjectName("graph_title")
+        self.verticalLayout_3.addWidget(self.graph_title)
+        self.line6 = QtWidgets.QFrame(self.centralwidget)
+        self.line6.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line6.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line6.setObjectName("line6")
+        self.verticalLayout_3.addWidget(self.line6)
+        self.widget = QtWidgets.QWidget(self.centralwidget)
+        self.widget.setObjectName("widget")
+        self.Tip2 = QtWidgets.QLabel(self.widget)
+        self.Tip2.setGeometry(QtCore.QRect(250, 190, 261, 61))
+        self.Tip2.setAlignment(QtCore.Qt.AlignCenter)
+        self.Tip2.setWordWrap(True)
+        self.Tip2.setObjectName("Tip2")
+        self.Tip1 = QtWidgets.QLabel(self.widget)
+        self.Tip1.setGeometry(QtCore.QRect(260, 100, 241, 101))
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        font.setWeight(75)
+        self.Tip1.setFont(font)
+        self.Tip1.setAlignment(QtCore.Qt.AlignCenter)
+        self.Tip1.setObjectName("Tip1")
+        self.Tip3 = QtWidgets.QLabel(self.widget)
+        self.Tip3.setGeometry(QtCore.QRect(270, 250, 251, 21))
+        self.Tip3.setObjectName("Tip3")
+        self.Tip4 = QtWidgets.QLabel(self.widget)
+        self.Tip4.setGeometry(QtCore.QRect(270, 290, 241, 16))
+        self.Tip4.setObjectName("Tip4")
+        self.Tip5 = QtWidgets.QLabel(self.widget)
+        self.Tip5.setGeometry(QtCore.QRect(270, 330, 251, 31))
+        self.Tip5.setWordWrap(True)
+        self.Tip5.setObjectName("Tip5")
+        self.Tip6 = QtWidgets.QLabel(self.widget)
+        self.Tip6.setGeometry(QtCore.QRect(270, 370, 241, 31))
+        self.Tip6.setObjectName("Tip6")
+        self.verticalLayout_3.addWidget(self.widget)
+        self.verticalLayout_3.setStretch(2, 1)
+        self.horizontalLayout_4.addLayout(self.verticalLayout_3)
+        self.line1 = QtWidgets.QFrame(self.centralwidget)
+        self.line1.setFrameShape(QtWidgets.QFrame.VLine)
+        self.line1.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line1.setObjectName("line1")
+        self.horizontalLayout_4.addWidget(self.line1)
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
+        self.verticalLayout.setContentsMargins(0, -1, -1, -1)
+        self.verticalLayout.setSpacing(20)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.Dashboard = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(True)
+        font.setWeight(75)
+        self.Dashboard.setFont(font)
+        self.Dashboard.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignHCenter)
+        self.Dashboard.setObjectName("Dashboard")
+        self.verticalLayout.addWidget(self.Dashboard)
+        self.line2 = QtWidgets.QFrame(self.centralwidget)
+        self.line2.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line2.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line2.setObjectName("line2")
+        self.verticalLayout.addWidget(self.line2)
+        self.Input = QtWidgets.QPushButton(self.centralwidget)
+        self.Input.setIcon(icon)
+        self.Input.setObjectName("Input")
+        self.verticalLayout.addWidget(self.Input)
+        self.file_path = QtWidgets.QLabel(self.centralwidget)
+        self.file_path.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.file_path.setAlignment(QtCore.Qt.AlignCenter)
+        self.file_path.setObjectName("file_path")
+        self.verticalLayout.addWidget(self.file_path)
+        self.line3 = QtWidgets.QFrame(self.centralwidget)
+        self.line3.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line3.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line3.setObjectName("line3")
+        self.verticalLayout.addWidget(self.line3)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_2.setSpacing(9)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.choose_extentions = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        font.setWeight(75)
+        self.choose_extentions.setFont(font)
+        self.choose_extentions.setAlignment(QtCore.Qt.AlignCenter)
+        self.choose_extentions.setObjectName("choose_extentions")
+        self.verticalLayout_2.addWidget(self.choose_extentions)
+        self.gridLayout = QtWidgets.QGridLayout()
+        self.gridLayout.setVerticalSpacing(20)
+        self.gridLayout.setObjectName("gridLayout")
+        self.WOB = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.WOB.setFont(font)
+        self.WOB.setObjectName("WOB")
+        self.gridLayout.addWidget(self.WOB, 0, 0, 1, 1)
+        self.Diameter = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.Diameter.setFont(font)
+        self.Diameter.setObjectName("Diameter")
+        self.gridLayout.addWidget(self.Diameter, 5, 0, 1, 1)
+        self.Gamma = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.Gamma.setFont(font)
+        self.Gamma.setObjectName("Gamma")
+        self.gridLayout.addWidget(self.Gamma, 6, 0, 1, 1)
+        self.RPM = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.RPM.setFont(font)
+        self.RPM.setObjectName("RPM")
+        self.gridLayout.addWidget(self.RPM, 4, 0, 1, 1)
+        self.Hookload = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.Hookload.setFont(font)
+        self.Hookload.setObjectName("Hookload")
+        self.gridLayout.addWidget(self.Hookload, 1, 0, 1, 1)
+        self.ROP = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.ROP.setFont(font)
+        self.ROP.setObjectName("ROP")
+        self.gridLayout.addWidget(self.ROP, 3, 0, 1, 1)
+        self.Torque = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.Torque.setFont(font)
+        self.Torque.setObjectName("Torque")
+        self.gridLayout.addWidget(self.Torque, 2, 0, 1, 1)
+        self.Hookload_ext = QtWidgets.QComboBox(self.centralwidget)
+        self.Hookload_ext.setObjectName("Hookload_ext")
+        self.Hookload_ext.addItem("")
+        self.Hookload_ext.addItem("")
+        self.Hookload_ext.addItem("")
+        self.Hookload_ext.addItem("")
+        self.gridLayout.addWidget(self.Hookload_ext, 1, 1, 1, 1)
+        self.WOB_ext = QtWidgets.QComboBox(self.centralwidget)
+        self.WOB_ext.setObjectName("WOB_ext")
+        self.WOB_ext.addItem("")
+        self.WOB_ext.addItem("")
+        self.WOB_ext.addItem("")
+        self.WOB_ext.addItem("")
+        self.gridLayout.addWidget(self.WOB_ext, 0, 1, 1, 1)
+        self.RPM_ext = QtWidgets.QComboBox(self.centralwidget)
+        self.RPM_ext.setObjectName("RPM_ext")
+        self.RPM_ext.addItem("")
+        self.RPM_ext.addItem("")
+        self.gridLayout.addWidget(self.RPM_ext, 4, 1, 1, 1)
+        self.Gamma_ext = QtWidgets.QComboBox(self.centralwidget)
+        self.Gamma_ext.setObjectName("Gamma_ext")
+        self.Gamma_ext.addItem("")
+        self.Gamma_ext.addItem("")
+        self.gridLayout.addWidget(self.Gamma_ext, 6, 1, 1, 1)
+        self.Diameter_ext = QtWidgets.QComboBox(self.centralwidget)
+        self.Diameter_ext.setObjectName("Diameter_ext")
+        self.Diameter_ext.addItem("")
+        self.Diameter_ext.addItem("")
+        self.gridLayout.addWidget(self.Diameter_ext, 5, 1, 1, 1)
+        self.Torque_ext = QtWidgets.QComboBox(self.centralwidget)
+        self.Torque_ext.setObjectName("Torque_ext")
+        self.Torque_ext.addItem("")
+        self.Torque_ext.addItem("")
+        self.Torque_ext.addItem("")
+        self.gridLayout.addWidget(self.Torque_ext, 2, 1, 1, 1)
+        self.Stand_Pressure = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.Stand_Pressure.setFont(font)
+        self.Stand_Pressure.setObjectName("Stand_Pressure")
+        self.gridLayout.addWidget(self.Stand_Pressure, 7, 0, 1, 1)
+        self.ROP_ext = QtWidgets.QComboBox(self.centralwidget)
+        self.ROP_ext.setObjectName("ROP_ext")
+        self.ROP_ext.addItem("")
+        self.ROP_ext.addItem("")
+        self.gridLayout.addWidget(self.ROP_ext, 3, 1, 1, 1)
+        self.Stand_Pressure_ext = QtWidgets.QComboBox(self.centralwidget)
+        self.Stand_Pressure_ext.setObjectName("Stand_Pressure_ext")
+        self.Stand_Pressure_ext.addItem("")
+        self.Stand_Pressure_ext.addItem("")
+        self.Stand_Pressure_ext.addItem("")
+        self.gridLayout.addWidget(self.Stand_Pressure_ext, 7, 1, 1, 1)
+        self.gridLayout.setColumnStretch(0, 2)
+        self.gridLayout.setColumnStretch(1, 1)
+        self.verticalLayout_2.addLayout(self.gridLayout)
+        self.verticalLayout_2.setStretch(0, 1)
+        self.verticalLayout_2.setStretch(1, 8)
+        self.verticalLayout.addLayout(self.verticalLayout_2)
+        self.line4 = QtWidgets.QFrame(self.centralwidget)
+        self.line4.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line4.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line4.setObjectName("line4")
+        self.verticalLayout.addWidget(self.line4)
+        self.LETSGO = QtWidgets.QPushButton(self.centralwidget)
+        self.LETSGO.setIcon(icon)
+        self.LETSGO.setObjectName("LETSGO")
+        self.verticalLayout.addWidget(self.LETSGO)
+        self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
+        self.progressBar.setStyleSheet("")
+        self.progressBar.setMaximum(29)
+        self.progressBar.setProperty("value", 0)
+        self.progressBar.setTextVisible(True)
+        self.progressBar.setInvertedAppearance(False)
+        self.progressBar.setObjectName("progressBar")
+        self.verticalLayout.addWidget(self.progressBar)
+        self.line5 = QtWidgets.QFrame(self.centralwidget)
+        self.line5.setFrameShape(QtWidgets.QFrame.HLine)
+        self.line5.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line5.setObjectName("line5")
+        self.verticalLayout.addWidget(self.line5)
+        self.data_export = QtWidgets.QLabel(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        font.setWeight(75)
+        self.data_export.setFont(font)
+        self.data_export.setAlignment(QtCore.Qt.AlignCenter)
+        self.data_export.setObjectName("data_export")
+        self.verticalLayout.addWidget(self.data_export)
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_3.setSpacing(10)
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.Complication_chosen = QtWidgets.QRadioButton(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.Complication_chosen.setFont(font)
+        self.Complication_chosen.setCheckable(True)
+        self.Complication_chosen.setChecked(False)
+        self.Complication_chosen.setObjectName("Complication_chosen")
+        self.RadioGroup = QtWidgets.QButtonGroup(MainWindow)
+        self.RadioGroup.setObjectName("RadioGroup")
+        self.RadioGroup.addButton(self.Complication_chosen)
+        self.horizontalLayout_3.addWidget(self.Complication_chosen)
+        self.Dataset_chosen = QtWidgets.QRadioButton(self.centralwidget)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.Dataset_chosen.setFont(font)
+        self.Dataset_chosen.setObjectName("Dataset_chosen")
+        self.RadioGroup.addButton(self.Dataset_chosen)
+        self.horizontalLayout_3.addWidget(self.Dataset_chosen)
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.Output = QtWidgets.QPushButton(self.centralwidget)
+        self.Output.setIcon(icon)
+        self.Output.setObjectName("Output")
+        self.verticalLayout.addWidget(self.Output)
+        self.verticalLayout.setStretch(2, 1)
+        self.verticalLayout.setStretch(5, 9)
+        self.verticalLayout.setStretch(7, 1)
+        self.verticalLayout.setStretch(8, 1)
+        self.verticalLayout.setStretch(12, 1)
+        self.horizontalLayout_4.addLayout(self.verticalLayout)
+        self.horizontalLayout_4.setStretch(0, 7)
+        self.horizontalLayout_4.setStretch(2, 3)
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(MainWindow)
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1138, 26))
+        self.menubar.setObjectName("menubar")
+        MainWindow.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        self.statusbar.setObjectName("statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+
+        self.retranslateUi(MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", "Прогноз осложнений"))
+        self.graph_title.setText(_translate("MainWindow", "Графическая часть"))
+        self.Tip2.setText(_translate("MainWindow", "Здесь отразится график после определения интервалов осложнений"))
+        self.Tip1.setText(_translate("MainWindow", "Подсказка"))
+        self.Tip3.setText(_translate("MainWindow", "1. Выберите данные "))
+        self.Tip4.setText(_translate("MainWindow", "2. Выберите размерности"))
+        self.Tip5.setText(_translate("MainWindow", "3. Программа определит интервалы возможных осложнений"))
+        self.Tip6.setText(_translate("MainWindow", "4. Выгрузите необходимые данные"))
+        self.Dashboard.setText(_translate("MainWindow", "Панель управления "))
+        self.Input.setToolTip(_translate("MainWindow", "<html><head/><body><p>Формат (*.xlsx, *.csv)</p></body></html>"))
+        self.Input.setText(_translate("MainWindow", "Выбрать данные"))
+        self.file_path.setText(_translate("MainWindow", "*здесь отразится имя файла*"))
+        self.choose_extentions.setText(_translate("MainWindow", "Выберите размерности данных"))
+        self.WOB.setText(_translate("MainWindow", "Нагрузка на долото"))
+        self.Diameter.setText(_translate("MainWindow", "Диаметр скважины"))
+        self.Gamma.setText(_translate("MainWindow", "Гамма каротаж"))
+        self.RPM.setText(_translate("MainWindow", "Частота вращения"))
+        self.Hookload.setText(_translate("MainWindow", "Вес на крюке"))
+        self.ROP.setText(_translate("MainWindow", "Скорость проходки"))
+        self.Torque.setText(_translate("MainWindow", "Крутящий момент"))
+        self.Hookload_ext.setItemText(0, _translate("MainWindow", "кН"))
+        self.Hookload_ext.setItemText(1, _translate("MainWindow", "кгс"))
+        self.Hookload_ext.setItemText(2, _translate("MainWindow", "тс"))
+        self.Hookload_ext.setItemText(3, _translate("MainWindow", "pound"))
+        self.WOB_ext.setCurrentText(_translate("MainWindow", "кН"))
+        self.WOB_ext.setItemText(0, _translate("MainWindow", "кН"))
+        self.WOB_ext.setItemText(1, _translate("MainWindow", "кгс"))
+        self.WOB_ext.setItemText(2, _translate("MainWindow", "тс"))
+        self.WOB_ext.setItemText(3, _translate("MainWindow", "pound"))
+        self.RPM_ext.setItemText(0, _translate("MainWindow", "об/м"))
+        self.RPM_ext.setItemText(1, _translate("MainWindow", "об/с"))
+        self.Gamma_ext.setItemText(0, _translate("MainWindow", "gAPI"))
+        self.Gamma_ext.setItemText(1, _translate("MainWindow", "мкР/ч"))
+        self.Diameter_ext.setItemText(0, _translate("MainWindow", "мм"))
+        self.Diameter_ext.setItemText(1, _translate("MainWindow", "inch"))
+        self.Torque_ext.setItemText(0, _translate("MainWindow", "Н*м"))
+        self.Torque_ext.setItemText(1, _translate("MainWindow", "кН*м"))
+        self.Torque_ext.setItemText(2, _translate("MainWindow", "pound-inch"))
+        self.Stand_Pressure.setText(_translate("MainWindow", "Давление на стояке"))
+        self.ROP_ext.setItemText(0, _translate("MainWindow", "м/час"))
+        self.ROP_ext.setItemText(1, _translate("MainWindow", "м/с"))
+        self.Stand_Pressure_ext.setItemText(0, _translate("MainWindow", "кПа"))
+        self.Stand_Pressure_ext.setItemText(1, _translate("MainWindow", "МПа"))
+        self.Stand_Pressure_ext.setItemText(2, _translate("MainWindow", "psi"))
+        self.LETSGO.setToolTip(_translate("MainWindow", "<html><head/><body><p>Расчёт и графическое представление интервалов осложнений</p></body></html>"))
+        self.LETSGO.setText(_translate("MainWindow", "Определить интервалы осложнений"))
+        self.data_export.setText(_translate("MainWindow", "Экспорт данных"))
+        self.Complication_chosen.setText(_translate("MainWindow", "По осложнениям"))
+        self.Dataset_chosen.setText(_translate("MainWindow", "Полный датасет"))
+        self.Output.setToolTip(_translate("MainWindow", "<html><head/><body><p>Информация по интервалам осложнений</p></body></html>"))
+        self.Output.setText(_translate("MainWindow", "Экспорт"))
+
+class Ui_Dialog(object):     
+    def setupUi(self, ColumnNameDialog):
+        ColumnNameDialog.setObjectName("ColumnNameDialog")
+        ColumnNameDialog.resize(416, 259)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(ColumnNameDialog)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
+        self.verticalLayout.setSpacing(7)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(ColumnNameDialog)
+        font = QtGui.QFont()
+        font.setPointSize(9)
+        self.label.setFont(font)
+        self.label.setText("")
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.comboBox = QtWidgets.QComboBox(ColumnNameDialog)
+        self.comboBox.setObjectName("comboBox")
+        self.verticalLayout.addWidget(self.comboBox)
+        spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(spacerItem)
+        self.buttonBox = QtWidgets.QDialogButtonBox(ColumnNameDialog)
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        self.verticalLayout.addWidget(self.buttonBox)
+        self.verticalLayout.setStretch(0, 4)
+        self.verticalLayout.setStretch(2, 1)
+        self.verticalLayout.setStretch(3, 1)
+        self.verticalLayout_2.addLayout(self.verticalLayout)
+        self.retranslateUi(ColumnNameDialog)
+        QtCore.QMetaObject.connectSlotsByName(ColumnNameDialog)
+
+    def retranslateUi(self, ColumnNameDialog):
+        _translate = QtCore.QCoreApplication.translate
+        ColumnNameDialog.setWindowTitle(_translate("ColumnNameDialog", "Выберите название колонки с данными"))
+
+class MyMplCanvas(FigureCanvas):
+    def __init__(self, fig, parent=None):
+        self.fig = fig
+        FigureCanvas.__init__(self,self.fig)
+        FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding, QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+        
+class ColumnNameDialog(QDialog, Ui_Dialog):
+    def __init__(self, mainwindow, text, columns, Number_of_dialog):
+        super().__init__()
+        self.setupUi(self)
+        self.mainwindow = mainwindow
+        if Number_of_dialog == 1:
+            self.label.setText("Не могу найти данные: " + text + "." + " Выберите название параметра:")
+        elif Number_of_dialog == 2:
+            self.label.setText("Не могу понять, что из найденных мной параметров - " + text + "." + " Выберите из списка:")
+        for i in range(len(columns)):
+            self.comboBox.addItem("")
+            self.comboBox.setItemText(i, columns[i])
+        self.buttonBox.accepted.connect(self.getColumnName)
+        self.buttonBox.rejected.connect(self.close)
+        
+    def getColumnName(self):
+        self.mainwindow.ColumnName = self.comboBox.currentText()
+        self.close()
+           
+class Window(QMainWindow, Ui_MainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.Input.clicked.connect(self.getFileName)
+        self.LETSGO.clicked.connect(self.detect_plot_complication)
+        self.Output.clicked.connect(self.getData)
+        self.data_path = ""
+        self.ColumnName = ""
+        self.k = 0
+        self.form = QtWidgets.QVBoxLayout(self.widget)   
+        
+    def getFileName(self):
+        data_path = QFileDialog.getOpenFileName(self, "Выберите данные", r'/home', 'Data (*.xlsx, *.csv)')
+        self.data_path = data_path[0]
+        if self.data_path == "":
+            self.file_path.setText("*здесь отразится имя файла*")
+        else:
+            self.file_path.setText(self.data_path)
+            filename, file_extention = os.path.splitext(self.data_path)
+            if file_extention == '.xlsx':
+                self.data = pd.read_excel(self.data_path)
+            else:
+                self.data = pd.read_csv(self.data_path)         
+        
+    def detect_plot_complication(self):
+       
+        def compile_data(self):
+           
+            def find_column(data, probable_name, text):
+                col = []
+                for i in range(len(data.columns)):
+                    for j in range(len(probable_name)):
+                        if probable_name[j] in data.columns[i]:
+                            col.append(data.columns[i])
+                            name = data.columns[i]
+                            data_array = data[name].values
+                            data_array = data_array.reshape(-1,1)
+                if np.size(col) < 1:
+                    Number_of_dialog = 1
+                    dialog = ColumnNameDialog(self, text, data.columns, Number_of_dialog)
+                    dialog.exec_()
+                    data_array = data[self.ColumnName].values
+                    data_array = data_array.reshape(-1,1)
+                elif np.size(col) > 1:
+                    Number_of_dialog = 2
+                    dialog = ColumnNameDialog(self, text, col, Number_of_dialog)
+                    dialog.exec_()
+                    data_array = data[self.ColumnName].values
+                    data_array = data_array.reshape(-1,1)
+                return data_array
+            
+            def reverse_negative(data):
+                for i in range(len(data)):
+                    if data[i] < 0:
+                        data[i] = -data[i]
+                return data
+            
+            WOB = ['WOB', 'Weight', 'Нагрузка']
+            Hookload = ['Hookload', 'Вес']
+            ROP = ['ROP', 'Скорость', 'Скорость проходки', 'Rate of Penetration']
+            Torque = ['Torque', 'Крутящий момент', 'Момент вращения']
+            RPM = ['RPM', 'Частота вращения']
+            Gamma = ['Gamma', 'GR', 'ГК', 'Гамма']
+            Diameter = ['Diameter', 'Диаметер']
+            Stand_Pressure = ['Standpipe Pressure', 'Давление на стояке']
+            MD = ['Глубина', 'MD', 'Depth']
+            
+            data_WOB = find_column(self.data, WOB, 'Нагрука на долото')
+            data_Hookload = find_column(self.data, Hookload, 'Вес на крюке')
+            self.progressBar.setValue(1)
+            data_ROP = find_column(self.data, ROP, 'Скорость проходки')
+            data_Torque = find_column(self.data, Torque, 'Крутящий момент')
+            self.progressBar.setValue(2)
+            data_RPM = find_column(self.data, RPM, 'Частота вращения')
+            data_Gamma = find_column(self.data, Gamma, 'Гамма каротаж')
+            self.progressBar.setValue(3)
+            data_Diameter = find_column(self.data, Diameter, 'Диаметер скважины')
+            data_Stand_Pressure = find_column(self.data, Stand_Pressure, 'Давление на стояке')
+            data_MD = find_column(self.data, MD, 'Глубина забоя')
+            self.progressBar.setValue(4)
+            
+            #for mse computation
+            if self.WOB_ext.currentText() == 'кН':
+                data_WOB = data_WOB/9.81
+            elif self.WOB_ext.currentText() == 'кгс':
+                data_WOB = data_WOB/1000
+            elif self.WOB_ext.currentText() == 'pound':
+                data_WOB = data_WOB*0.45/1000
+            if self.ROP_ext.currentText() == 'м/c':
+                data_ROP = data_ROP*3600
+            if self.Torque_ext.currentText() == 'Н*м':
+                data_Torque = data_Torque/1000
+            elif self.Torque_ext.currentText() == 'pound-inch':
+                data_Torque = data_Torque*0.00011213
+            if self.RPM_ext.currentText() == 'об/с':
+                data_RPM = data_RPM*60
+            if self.Diameter_ext.currentText() == 'inch':
+                data_Diameter = data_Diameter*25.4 
+            self.progressBar.setValue(5)
+            #other parameters for model
+            if self.Hookload_ext.currentText() == 'кН':
+                data_Hookload = data_Hookload/9.81
+            elif self.Hookload_ext.currentText() == 'кгс':
+                data_Hookload = data_Hookload/1000
+            elif self.Hookload_ext.currentText() == 'pound':
+                data_Hookload = data_Hookload*0.45/1000
+            if self.Gamma_ext.currentText() == 'мкР/ч':
+                data_Gamma = data_Gamma*10
+            if self.Stand_Pressure_ext.currentText() == 'МПа':
+                data_Stand_Pressure = data_Stand_Pressure*1000
+            elif self.Stand_Pressure_ext.currentText() == 'psi':
+                data_Stand_Pressure = data_Stand_Pressure*6.9
+            
+            #revercing negative values (if found)
+            data_WOB = reverse_negative(data_WOB)
+            data_Torque = reverse_negative(data_Torque)
+            data_ROP = reverse_negative(data_ROP)
+            self.progressBar.setValue(6)
+            
+            #cutting disposable values
+            data_WOB = data_WOB[range(len(data_MD))]
+            data_Hookload = data_Hookload[range(len(data_MD))]
+            data_ROP = data_ROP[range(len(data_MD))]
+            data_Torque = data_Torque[range(len(data_MD))]
+            data_RPM = data_RPM[range(len(data_MD))]
+            data_Gamma = data_Gamma[range(len(data_MD))]
+            data_Diameter = data_Diameter[range(len(data_MD))]
+            data_Stand_Pressure = data_WOB[range(len(data_MD))]
+            self.progressBar.setValue(7)
+            #creating dataFrame
+            d1 = np.append(data_WOB, data_Hookload, axis=1)
+            d2 = np.append(d1, data_ROP, axis=1)
+            d3 = np.append(d2, data_Torque, axis=1)
+            d4 = np.append(d3, data_RPM, axis=1)
+            d5 = np.append(d4, data_Gamma, axis=1)
+            d6 = np.append(d5, data_Diameter, axis=1)
+            d7 = np.append(d6, data_Stand_Pressure, axis=1)
+            data_collected = np.append(d7, data_MD, axis=1)
+            self.progressBar.setValue(8)
+            data_columns = ['WOB', 'Hookload', 'ROP', 'Torque', 'RPM', 'Gamma', 'Diameter', 'Standpipe Pressure', 'MD']
+            data = pd.DataFrame(data_collected, columns=data_columns)
+            #MSE comutation
+            data['MSE'] = (data['WOB']*1000*9.81/(pi/4*(data['Diameter']/1000)**2)+2*pi*data['RPM']/60*
+                                    data['Torque']*1000/(pi/4*(data['Diameter']/1000)**2)/(data['ROP']/3600))*10**(-6)
+            self.progressBar.setValue(9)
+            return data
+        
+        def data_processing(self, data):
+            
+            def isolation_forest(data):
+                contamination = 0.008*len(data.MD)/10000
+                clf=IsolationForest(n_estimators=200, max_samples='auto', contamination=contamination, \
+                                    max_features=1, bootstrap=False, n_jobs=-1, random_state=42, verbose=0)
+                clf.fit(data['MSE'].values.reshape(-1,1))
+                pred = clf.predict(data['MSE'].values.reshape(-1,1))
+                data['anomaly']=pred
+                return data
+            
+            def cut_anomaly(data):
+                data.loc[data['anomaly']==-1, ['MSE']] = np.nan
+                data.interpolate(method='linear', inplace=True, limit_area=None)
+                data = data.fillna(method='bfill')
+                data = data.fillna(method='ffill')
+                return data
+            
+            def drop_anomaly_column(data):
+                data = data.drop(columns=['anomaly'])
+                return data
+            
+            def data_smoothing(data):
+                data['MSE'] = savgol_filter(data['MSE'].values,81,3)
+                data['WOB'] = savgol_filter(data['WOB'].values,61,3)
+                data['ROP'] = savgol_filter(data['ROP'].values,61,3)
+                data['Torque'] = savgol_filter(data['Torque'].values,61,3)
+                return data
+        
+            data_isolated = isolation_forest(data)
+            self.progressBar.setValue(10)
+            data_cut = cut_anomaly(data_isolated)
+            self.progressBar.setValue(11)
+            data_without_anomaly = drop_anomaly_column(data_cut)
+            self.progressBar.setValue(12)
+            data = data_smoothing(data_without_anomaly)
+            self.progressBar.setValue(13)
+            return data
+        
+        def detect_complication(self, data):
+            needed_columns = ['WOB', 'Hookload', 'ROP', 'Torque', 'RPM', 'Gamma', 'Diameter', 'Standpipe Pressure', 'MSE']
+            data_for_detection = data.loc[:,needed_columns]
+            #data scaling
+            scaler = joblib.load('scaler_for_model')
+            self.progressBar.setValue(14)
+            data_scaled = scaler.transform(data_for_detection)
+            self.progressBar.setValue(15)
+            #importing model
+            model = load_model('sequential_model.h5')
+            self.progressBar.setValue(16)
+            #finding complications
+            prediction = model.predict(data_scaled)
+            self.progressBar.setValue(17)
+            #adding predictions to desired data
+            data['model prediction'] = 0
+            for i in range(len(prediction)):
+                if prediction[i][0] > prediction[i][1]:
+                    data.loc[i,['model prediction']] = 1
+            self.progressBar.setValue(18)
+            return data
+        
+        def plot_graph(self, data):
+            plt.style.use('seaborn')
+            fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize=(10,10), dpi=75)
+            ax1.set_title('Механическая удельная энергия', fontsize=15)
+            ax2.set_title('Нагрузка на долото', fontsize=15)
+            ax3.set_title('Скорость проходки', fontsize=15)
+            ax1.set_ylabel('Глубина, м', fontsize=15)
+            ax1.set_xlabel('MSE, МПа', fontsize=15)
+            ax1.tick_params(axis='both',labelsize=10)
+            ax2.set_xlabel('Нагрузка на долото, тс', fontsize=15)
+            ax2.tick_params(axis='both',labelsize=10)
+            ax3.set_xlabel('Скорость проходки, м/ч', fontsize=15)
+            ax3.tick_params(axis='both',labelsize=10)
+            for i in range(len(data.MD)):
+                if data['model prediction'][i] == 1:
+                    ax1.plot(data.MSE[i],data.MD[i],marker='o',color='red')
+            self.progressBar.setValue(19)
+            ax1.plot(data.MSE, data.MD)
+            ax1.invert_yaxis()
+            self.progressBar.setValue(20)
+            for i in range(len(data.MD)):
+                if data['model prediction'][i] == 1:
+                    ax2.plot(data.WOB[i],data.MD[i],marker='o',color='red')
+            self.progressBar.setValue(21)
+            ax2.plot(data.WOB, data.MD)
+            ax2.invert_yaxis()
+            self.progressBar.setValue(22)
+            for i in range(len(data.MD)):
+                if data['model prediction'][i] == 1:
+                    ax3.plot(data.ROP[i],data.MD[i],marker='o',color='red')
+            self.progressBar.setValue(23)
+            ax3.plot(data.ROP, data.MD)
+            ax3.invert_yaxis()
+            self.progressBar.setValue(24)
+            return fig
+                
+        if self.data_path == "":
+            error = QtWidgets.QMessageBox()
+            error.setWindowTitle('Ошибка')
+            error.setText('Выберите данные для расчёта!')
+            error.exec_()
+        else:
+            data_compiled = compile_data(self)
+            #missing data
+            na = data_compiled.isna().sum().values
+            if na.sum() > 0:
+                msg_missing = QtWidgets.QMessageBox()
+                msg_missing.setWindowTitle('Ошибка')
+                msg_missing.setText('В данных есть пропуски. Невозможно обработать. Проверьте данные и заполните пропуски, либо удалите их.')
+                msg_missing.exec_()
+                self.progressBar.setValue(0)
+            else:             
+                #data_processing
+                data_processed = data_processing(self, data_compiled)
+                #detecting complications
+                self.data_detected = detect_complication(self, data_processed)
+                fig = plot_graph(self, self.data_detected)
+                self.fig = fig
+                if self.k == 1:
+                    self.form.removeWidget(self.canavas)
+                    self.canavas.deleteLater()
+                    self.canavas = None
+                    self.form.removeWidget(self.toolbar)
+                    self.toolbar.deleteLater()
+                    self.toolbar = None
+                self.progressBar.setValue(25)
+                #getting an object of the canvas class with figure
+                self.canavas = MyMplCanvas(self.fig)
+                self.progressBar.setValue(26)
+                #alignment of this object to the form Размещение экземпляра класса холста в шаблоне размещения
+                self.form.addWidget(self.canavas)
+                self.progressBar.setValue(27)
+                #navigation object
+                self.toolbar = NavigationToolbar(self.canavas, self)
+                self.progressBar.setValue(28)
+                #alignment of navigation tool
+                self.form.addWidget(self.toolbar)
+                self.k = 1
+                self.progressBar.setValue(29)                  
+            
+    def getData(self):
+        if self.data_path == "":
+            error = QtWidgets.QMessageBox()
+            error.setWindowTitle('Ошибка')
+            error.setText('Выберите данные для расчёта! Определите интервалы осложнений')
+            error.exec_()
+        else:
+            if self.k == 0:
+                msg_no_data = QtWidgets.QMessageBox()
+                msg_no_data.setWindowTitle('Нечего выгрузать')
+                msg_no_data.setText('Необходимо произвести расчёт. Определите интервалы осложнений.')
+                msg_no_data.exec_()
+            else:
+                self.data_complication = self.data_detected.loc[self.data_detected['model prediction']==1,:]
+                if self.Complication_chosen.isChecked():
+                    directory = QFileDialog.getSaveFileName(self, "Сохранить данные по осложнениям", r'/home', 
+                                                            'Excel file (*.xlsx);; CSV file (*.csv)')[0]
+                    directory_path, directory_extention = os.path.splitext(directory)  
+                    if directory != "":
+                        if directory_extention == '.xlsx':  
+                            self.data_complication.to_xlsx(path_or_buf=directory, index=False)
+                        else:
+                            self.data_complication.to_csv(path_or_buf=directory, index=False)
+                if self.Dataset_chosen.isChecked():
+                    directory = QFileDialog.getSaveFileName(self, "Сохранить данные по осложнениям", r'/home', 
+                                                            'Excel file (*.xlsx);; CSV file (*.csv)')[0]
+                    directory_path, directory_extention = os.path.splitext(directory)  
+                    if directory != "":
+                        if directory_extention == '.xlsx':  
+                            self.data_detected.to_xlsx(path_or_buf=directory, index=False)
+                        else:
+                            self.data_detected.to_csv(path_or_buf=directory, index=False)
+                if self.Complication_chosen.isChecked() == False:
+                    if self.Dataset_chosen.isChecked() == False:
+                        msg_whattoexport = QtWidgets.QMessageBox()
+                        msg_whattoexport.setWindowTitle('Что выгружать?')
+                        msg_whattoexport.setText('Выберите, какие именно данные хотите выгрузить.')
+                        msg_whattoexport.exec_() 
+
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    splash_pix = QPixmap('.\LogoSplash.png')
+    splash = QSplashScreen(splash_pix, QtCore.Qt.WindowStaysOnTopHint)
+    splash.setMask(splash_pix.mask())
+    splash.show()
+    app.processEvents()
+    time.sleep(1)
+    window = Window()
+    splash.finish(window)
+    window.show()
+    sys.exit(app.exec_())
